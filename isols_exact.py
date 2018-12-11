@@ -73,14 +73,15 @@ class IsolsExact(MatrixSketcherBase):
         def fun(u,v):
             return u/v
         i_star = 0
-
+        Y = Y.transpose()
         for col_i in range(n):
             if col_i %1000 == 0:
                 print(col_i)
-            u.append(np.linalg.norm(np.matmul(Y.transpose(),X[:,col_i]),2))
+            u.append(np.linalg.norm(np.matmul(Y,X[:,col_i]),2))
             v.append(np.linalg.norm(X[:,col_i], 2))
             f.append(fun(u[col_i],v[col_i]))
-            i_star = np.argmax(f)
+        i_star = np.argmax(f)
+        Y = Y.transpose()
         picked = [i_star]
         x_s = X[:,i_star]
         S = [x_s]
@@ -182,8 +183,7 @@ if __name__ == '__main__':
 
     nb_scores = []
     skecth_scores = []
-    pairs = [("cat", "dog"), ("good", "bad"), ("motivation", "inspiration"), ("girl", "chick"), ("body", "girl"),
-             ("britain", "united_kingdom"), ("warrior", "war")]
+    pairs = [("animal","dog"),("good","bad"),("motivation","inspiration"),("girl","chick"),("body","girl"),("britain","united_kingdom"),("warrior","war"),("car","table")]
     for pair in pairs:
         pref = "/c/en/"
         c1 = pair[0]

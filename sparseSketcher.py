@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from numpy import zeros, sqrt, dot, diag, ceil, log
 from numpy.random import randn
 from numpy.linalg import norm, svd, qr, eigh
@@ -119,6 +121,7 @@ if __name__ == '__main__':
     n,d = normed_matrix.shape
     print(n,d)
     print(normed_matrix)
+    start_time = datetime.now()
     sketcher = SparseSketcher(d, ell)
     print("Going through sketch")
     for idx,v in enumerate(normed_matrix):
@@ -136,8 +139,8 @@ if __name__ == '__main__':
     print(svd.singular_values_)
     nb_scores = []
     skecth_scores = []
-    pairs = [("cat", "dog"), ("good", "bad"), ("motivation", "inspiration"), ("girl", "chick"), ("body", "girl"),
-             ("britain", "united_kingdom"), ("warrior", "war")]
+    pairs = [("animal","dog"),("good","bad"),("motivation","inspiration"),("girl","chick"),("body","girl"),("britain","united_kingdom"),("warrior","war"),("car","table")]
+    end_time = datetime.now()
     for pair in pairs:
         pref = "/c/en/"
         c1 = pair[0]
@@ -162,4 +165,6 @@ if __name__ == '__main__':
         nb_scores.append(nbdotres)
         print(nbdotres)
 
-    print(np.cov([skecth_scores,nb_scores]))
+    print(np.log(np.average(skecth_scores)) / np.log(np.average(nb_scores)))
+    print(np.cov([skecth_scores, nb_scores]))
+    print(str((end_time - start_time).seconds))

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from numpy import zeros, sqrt, dot, diag, ceil, log
 from numpy.random import randn
 from numpy.linalg import norm, svd, qr, eigh, lstsq, pinv
@@ -20,6 +22,9 @@ from pmf import convert_to_coo_sparse_matrix
 
   
 # sparse frequent directions sketcher
+from vectorcomparer import find_vectors
+
+
 class GeneralSketcher(MatrixSketcherBase):
 
     def __init__(self, A, k, l):
@@ -42,8 +47,8 @@ class GeneralSketcher(MatrixSketcherBase):
 
     def simple_low_rank_approx(self):
         Q = orth(self.Y)
-        t =np.matmul(self.capital_psy,Q)
-        X = lstsq(t,self.W)
+        t = np.matmul(self.capital_psy,Q)
+        X = lstsq(t,self.W)[0]
         return Q,X
 
     def low_rank_approx(self):
@@ -70,10 +75,10 @@ if __name__ == '__main__':
     # n = 100
     # d = 20
     #Singular vals to approx.
-    ell = 50
+    ell = 100
     # A = rand(n, d, density=0.001, format='lil')
     print("Loading edges")
-    rss = load_local_edgelist(limit=1000)
+    rss = load_local_edgelist(limit=100000)
     print("Splitting")
     conceptlist, featurelist, weightlist = split_features(rss)
     print("Creating csm")
@@ -86,13 +91,14 @@ if __name__ == '__main__':
     print(n,d)
     print(normed_matrix)
     A = normed_matrix
+    start_time = datetime.now()
     sketcher = GeneralSketcher(A, ell,ell)
     print("Going through sketch")
     # for idx,v in enumerate(normed_matrix):
     #     if idx%1000==0:
     #         print(idx)
     #     sketcher.update(v)
-    Q,X = sketcher.low_rank_approx()
+    Q,X = sketcher.simple_low_rank_approx()
     sketch = np.matmul(Q,X)
     # Q,S,VT = sketcher.fixed_rank_approx(50)
     # sketch = np.matmul(Q,S)
@@ -103,23 +109,35 @@ if __name__ == '__main__':
     print(svd.singular_values_)
     print(sketch)
     print("Done")
-    # print("Done")
-    # print(svd.singular_values_)
+    nb_scores = []
+    skecth_scores = []
+    pairs = [("animal","dog"),("good","bad"),("motivation","inspiration"),("girl","chick"),("body","girl"),("britain","united_kingdom"),("warrior","war"),("car","table")]
+    end_time = datetime.now()
+    for pair in pairs:
+        pref = "/c/en/"
+        c1 = pair[0]
+        c2 = pair[1]
+        print("Comparing")
+        print(c1)
+        print(c2)
+        truck_index = conceptmap[pref + c1]
+        car_index = conceptmap[pref + c2]
 
-    c1 = "/c/en/motivation"
-    c2 = "/c/en/inspiration"
-    print("Comparing")
-    print(c1)
-    print(c2)
-    truck_index = conceptmap[c1]
-    car_index = conceptmap[c2]
+        truck_row = normed_matrix[truck_index]
+        car_row = normed_matrix[car_index]
 
-    truck_row = normed_matrix[truck_index]
-    car_row = normed_matrix[car_index]
-    print(dot(truck_row,car_row))
-    truck_low_dim = svd.transform([truck_row])
-    car_low_dim = svd.transform([car_row])
-    # truck_low_dim = np.matmul(sketch,truck_row)
-    # car_low_dim = np.matmul(sketch,car_row)
+        truck_low_dim = svd.transform([truck_row])[:, 0]
+        car_low_dim = svd.transform([car_row])[:, 0]
+        testdotres = dot(truck_low_dim, car_low_dim.transpose())
+        skecth_scores.append(testdotres)
+        print(testdotres)
+        print("Comparing against Numberbatch")
+        v1, v2 = find_vectors(c1, c2)
+        nbdotres = dot(v1, v2)
+        nb_scores.append(nbdotres)
+        print(nbdotres)
 
-    print(dot(truck_low_dim, car_low_dim.transpose()))
+
+    print(np.log(np.average(skecth_scores)) / np.log(np.average(nb_scores)))
+    print(np.cov([skecth_scores, nb_scores]))
+    print(str((end_time - start_time).seconds))
