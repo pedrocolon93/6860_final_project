@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from numpy import zeros, sqrt, dot, diag, ceil, log
 from numpy.random import randn
 from numpy.linalg import norm, svd, qr, eigh, lstsq, pinv
@@ -18,7 +20,7 @@ from matrixSketcherBase import MatrixSketcherBase
 from pmf import convert_to_coo_sparse_matrix
 
 
-  
+
 # sparse frequent directions sketcher
 from vectorcomparer import find_vectors
 
@@ -42,7 +44,7 @@ def Orthonormal(next_x, Q_j):
         res = r/mag
     res = res.transpose()
     return res
-    
+
 
 
 class IsolsExact(MatrixSketcherBase):
@@ -148,7 +150,7 @@ if __name__ == '__main__':
     # n = 100
     # d = 20
     #Singular vals to approx.
-    ell = 50
+    ell = 100
     # A = rand(n, d, density=0.001, format='lil')
     print("Loading edges")
     rss = load_local_edgelist(limit=100000)
@@ -164,14 +166,19 @@ if __name__ == '__main__':
     print(n,d)
     print(normed_matrix)
     A = normed_matrix
+    start_time = datetime.now()
     sketcher = IsolsExact()
     print("Going through sketch")
-    # for idx,v in enumerate(normed_matrix):
-    #     if idx%1000==0:
-    #         print(idx)
-    #     sketcher.update(v)
+    # # for idx,v in enumerate(normed_matrix):
+    # #     if idx%1000==0:
+    # #         print(idx)
+    # #     sketcher.update(v)
     sketch = sketcher.fixed_rank_approx(A,ell)
-
+    sketch = np.array(sketch).transpose()
+    # print(sketch.shape)
+    end_time = datetime.now()
+    pickle.dump(sketch,open("sketch",'wb'))
+    sketch = pickle.load(open("sketch","rb"))
     print("TSVD")
     svd = TruncatedSVD(n_components=50)
     svd.fit(sketch)
@@ -183,7 +190,7 @@ if __name__ == '__main__':
 
     nb_scores = []
     skecth_scores = []
-    pairs = [("animal","dog"),("good","bad"),("motivation","inspiration"),("girl","chick"),("body","girl"),("britain","united_kingdom"),("warrior","war"),("car","table")]
+    pairs = [("motivation","inspiration"),("animal","dog"),("good","bad"),("girl","chick"),("body","girl"),("britain","united_kingdom"),("warrior","war"),("car","table")]
     for pair in pairs:
         pref = "/c/en/"
         c1 = pair[0]
@@ -209,7 +216,9 @@ if __name__ == '__main__':
         nb_scores.append(nbdotres)
         print(nbdotres)
 
-    print(np.cov([skecth_scores, nb_scores]))
+    print(np.log(np.average(skecth_scores)) /np.log(np.average(nb_scores)))
+    print(np.cov([skecth_scores,nb_scores]))
+    print(str((end_time - start_time).seconds))
 
     # c1 = "/c/en/motivation"
     # c2 = "/c/en/inspiration"
@@ -228,3 +237,4 @@ if __name__ == '__main__':
     # # car_low_dim = np.matmul(sketch,car_row)
     #
     # print(dot(truck_low_dim, car_low_dim.transpose()))
+
